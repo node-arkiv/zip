@@ -2,7 +2,7 @@
 
 import crc32 from './crc32';
 import crypto from 'crypto';
-import { UINT16 } from './data-type';
+import { UINT32 } from './data-type';
 
 const _uint8 = n => n & 0xFF;
 const _uint32 = n => n & 0xFFFFFFFF;
@@ -74,11 +74,14 @@ const HEADER_LENGTH = 12;
 
 export default class ZIP20 {
 
-	static Encrypt(buf: Buffer, key: string, crc: UINT16) {
+	static Encrypt(buf: Buffer, key: string, crc: UINT32) {
 		const chiper = new CryptoChiper(key);
+		const crcBuf = Buffer.alloc(4);
+		crcBuf.writeUInt32LE(crc);
+		crc = crcBuf.readUInt16LE(0);
 
 		let header = crypto.randomBytes(HEADER_LENGTH);
-		header.writeUInt16LE(crc>>15, HEADER_LENGTH - 2);
+		header.writeUInt16LE(crc, HEADER_LENGTH - 2);
 		header = chiper.encrypt(header);
 
 		const data = chiper.encrypt(buf);

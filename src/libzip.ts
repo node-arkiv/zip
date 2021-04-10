@@ -19,11 +19,13 @@ export class ZipArchiveEntry {
 	private header!: LocalFileHeader;
 	private stream: StreamBuffer;
 	private passwd!: string;
+	private raw!: Buffer;
 
 	constructor(private archive: ZipArchive, stream?: StreamBuffer) {
 		if ( stream ) {
 			this.central = new CentralDirectory(stream);
 			this.stream = stream;
+			this.raw = this.Read();
 		} else {
 			this.stream = new StreamBuffer();
 		}
@@ -101,6 +103,10 @@ export class ZipArchiveEntry {
 		}
 	}
 
+	get RawData() {
+		return this.raw;
+	}
+
 	private Uncompress(data: Buffer) {
 		if ( !this.header ) {
 			return Buffer.from('');
@@ -121,6 +127,7 @@ export class ZipArchiveEntry {
 			default:
 				throw Error(`Unknown compression method. [${this.header.compression}]`);
 		}
+		this.raw = buf;
 		return buf;
 	}
 
@@ -172,6 +179,7 @@ export class ZipArchiveEntry {
 		this.header.uncompressedSize = data.length;
 		this.central.uncompressedSize = data.length;
 
+		this.raw = data;
 		this.header.data = this.Compress(data);
 
 		const date = new Date();
@@ -257,13 +265,31 @@ export class ZipArchive {
 		stream.Fd = 0;
 		this.entries.forEach((entry: ZipArchiveEntry) => {
 
-			const data = entry.Read();
+			const unComData = entry.RawData;
+
 			const header = entry.LocalFileHeader;
 			const central = entry.CentralDirectory;
-
-			const crc32 = _uint32(CRC32.buf(data));
+			const crc32 = _uint32(CRC32.buf(unComData));
 			header.crc32 = crc32;
 			central.crc32 = crc32;
+
+			let data: any;
+			if ( header.flags.Encrypted ) {
+				let d = unComData;
+				switch ( header.compression ) {
+					case COMP_TYPE.DEFLATED:
+						d = zlib.deflateRawSync(d);
+						break;
+				}
+				d = ZIP20.Encrypt(d, entry.Password, crc32);
+				data = d;
+			} else {
+				switch ( header.compression ) {
+					case COMP_TYPE.DEFLATED:
+						data = zlib.deflateRawSync(unComData);
+						break;
+				}
+			}
 			central.headerOffset = stream.Fd;
 
 			stream.WriteUint32(header.signature);
@@ -279,11 +305,7 @@ export class ZipArchive {
 			stream.WriteUint16(header.extraFieldLen);
 			stream.WriteString(header.filename);
 			stream.WriteBuffer(header.extraField);
-			if ( header.flags.Encrypted ) {
-				stream.WriteBuffer(ZIP20.Encrypt(header.data, entry.Password, entry.Crc32));
-			} else {
-				stream.WriteBuffer(header.data);
-			}
+			stream.WriteBuffer(header.data);
 		});
 
 		this.entries.forEach((entry: ZipArchiveEntry, idx: number) => {
