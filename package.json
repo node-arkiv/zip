@@ -1,5 +1,5 @@
 {
-	"name": "libzip",
+	"name": "@arkiv/zip",
 	"version": "1.0.7",
 	"author": "raravel",
     "license": "MIT",

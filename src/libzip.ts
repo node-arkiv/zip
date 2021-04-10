@@ -163,7 +163,6 @@ export class ZipArchiveEntry {
 		if ( !this.header ) {
 			this.Init();
 		}
-		console.log(this.Name, data.length, data);
 
 		this.header.uncompressedSize = data.length;
 		this.central.uncompressedSize = data.length;
@@ -424,6 +423,27 @@ export class ZipFile {
 		});
 
 		fs.writeFileSync(dst, archive.Stream);
+	}
+
+	static CreateBufferFromDirectory(src: string, passwd?: string) {
+		const stat = fs.statSync(src);
+		if ( !stat.isDirectory() ) {
+			throw Error(`Is not directory [${src}]`);
+		}
+
+		const archive = new ZipArchive(dst);
+		archive.Password = passwd as string;
+
+		readDirectory(src, (p: string, is_dir: boolean) => {
+			const entry = archive.CreateEntry(p);
+			if ( !is_dir ) {
+				const target = path.resolve(src, p);
+				const data = fs.readFileSync(target);
+				entry.Write(data);
+			}
+		});
+
+		return archive;
 	}
 
 	static ExtractToDirectory(src: string, dst: string, passwd?: string) {
