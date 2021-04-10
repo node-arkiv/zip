@@ -25,7 +25,10 @@ export class ZipArchiveEntry {
 		if ( stream ) {
 			this.central = new CentralDirectory(stream);
 			this.stream = stream;
-			this.raw = this.Read();
+			this.Init();
+			if ( this.central.flags.Encrypted === false ) {
+				this.raw = this.Read();
+			}
 		} else {
 			this.stream = new StreamBuffer();
 		}
@@ -98,8 +101,10 @@ export class ZipArchiveEntry {
 		this.passwd = val;
 		if ( this.passwd ) {
 			this.header.flags.Encrypted = true;
+			this.central.flags.Encrypted = true;
 		} else {
 			this.header.flags.Encrypted = false;
+			this.central.flags.Encrypted = true;
 		}
 	}
 
@@ -151,8 +156,10 @@ export class ZipArchiveEntry {
 	}
 
 	public Init() {
+		const orgFd = this.stream.Fd;
 		this.stream.Fd = this.central.headerOffset;
 		this.header = new LocalFileHeader(this.stream);
+		this.stream.Fd = orgFd;
 	}
 
 	public Delete() {
@@ -255,12 +262,12 @@ export class ZipArchive {
 	}
 
 	get Stream() {
-		this.__stream_rewrite();
+		this.ReloadInfo();
 		const stream = this.stream as StreamBuffer;
 		return stream.buf;
 	}
 
-	private __stream_rewrite() {
+	public ReloadInfo() {
 		const stream = new StreamBuffer();
 		stream.Fd = 0;
 		this.entries.forEach((entry: ZipArchiveEntry) => {
@@ -270,8 +277,6 @@ export class ZipArchive {
 			const header = entry.LocalFileHeader;
 			const central = entry.CentralDirectory;
 			const crc32 = _uint32(CRC32.buf(unComData));
-			header.crc32 = crc32;
-			central.crc32 = crc32;
 
 			let data: any;
 			if ( header.flags.Encrypted ) {
@@ -291,6 +296,8 @@ export class ZipArchive {
 				}
 			}
 			central.headerOffset = stream.Fd;
+			central.crc32 = header.crc32 = crc32;
+			central.compressedSize = header.compressedSize = data.length;
 
 			stream.WriteUint32(header.signature);
 			stream.WriteUint16(header.version);
@@ -305,16 +312,19 @@ export class ZipArchive {
 			stream.WriteUint16(header.extraFieldLen);
 			stream.WriteString(header.filename);
 			stream.WriteBuffer(header.extraField);
-			stream.WriteBuffer(header.data);
+			stream.WriteBuffer(data);
 		});
 
+		this.eofDir.recordSize = 0;
 		this.entries.forEach((entry: ZipArchiveEntry, idx: number) => {
 			const central = entry.CentralDirectory;
+			let size = 0;
 
 			if ( idx === 0 ) {
 				this.eofDir.recordStart = stream.Fd;
 			}
 
+			let startFd = stream.Fd;
 			stream.WriteUint32(central.signature);
 			stream.WriteUint16(central.version);
 			stream.WriteUint16(central.extVer);
@@ -335,6 +345,8 @@ export class ZipArchive {
 			stream.WriteString(central.filename);
 			stream.WriteBuffer(central.extraField);
 			stream.WriteString(central.comment);
+			size = stream.Fd - startFd;
+			this.eofDir.recordSize += size;
 		});
 
 		this.eofDir.totalNum = this.eofDir.totalNum - this.eofDir.recordNum + this.entries.length;
@@ -409,7 +421,7 @@ export class ZipArchive {
 	}
 
 	public Save() {
-		fs.writeFileSync(this.filename, this.Stream);
+		fs.writeFileSync(this.filename, this.stream as Buffer);
 	}
 
 }
