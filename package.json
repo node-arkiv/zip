@@ -1,13 +1,14 @@
 {
 	"name": "@arkiv/zip",
-	"version": "1.1.6",
+	"version": "1.1.8",
 	"author": "raravel",
 	"license": "MIT",
 	"main": "dist/libzip.js",
 	"scripts": {
 		"dev": "nodemon --watch src --watch package.json --watch tsconfig.js --delay 1 --exec 'npm run lint && ts-node' src/index.ts",
 		"lint": "tslint -p .",
-		"build": "tsc"
+		"build": "tsc",
+		"prepublishOnly": "npm run build"
 	},
 	"devDependencies": {
 		"@types/node": "^14.0.13",
