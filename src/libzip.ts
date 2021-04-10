@@ -94,6 +94,11 @@ export class ZipArchiveEntry {
 
 	set Password(val: string) {
 		this.passwd = val;
+		if ( this.passwd ) {
+			this.header.flags.Encrypted = true;
+		} else {
+			this.header.flags.Encrypted = false;
+		}
 	}
 
 	private Uncompress(data: Buffer) {
@@ -274,7 +279,11 @@ export class ZipArchive {
 			stream.WriteUint16(header.extraFieldLen);
 			stream.WriteString(header.filename);
 			stream.WriteBuffer(header.extraField);
-			stream.WriteBuffer(header.data);
+			if ( header.flags.Encrypted ) {
+				stream.WriteBuffer(ZIP20.Encrypt(header.data, entry.Password, entry.Crc32));
+			} else {
+				stream.WriteBuffer(header.data);
+			}
 		});
 
 		this.entries.forEach((entry: ZipArchiveEntry, idx: number) => {
