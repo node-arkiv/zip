@@ -431,7 +431,7 @@ export class ZipFile {
 			throw Error(`Is not directory [${src}]`);
 		}
 
-		const archive = new ZipArchive(dst);
+		const archive = new ZipArchive(src + '.zip');
 		archive.Password = passwd as string;
 
 		readDirectory(src, (p: string, is_dir: boolean) => {
