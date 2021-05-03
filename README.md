@@ -9,12 +9,12 @@ Manipulate [`.zip`](https://en.wikipedia.org/wiki/ZIP_(file_format)) file in nod
 
 npm
 ```sh
-npm install libzip
+npm install @arkiv/zip
 ```
 
 yarn
 ```sh
-yarn add libzip
+yarn add @arkiv/zip
 ```
 
 ## How to use
