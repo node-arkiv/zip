@@ -2,7 +2,7 @@
 
 import crc32 from './crc32';
 import crypto from 'crypto';
-import { UINT32 } from './data-type';
+import { UINT32 } from '@arkiv/buffer';
 
 const _uint8 = n => n & 0xFF;
 const _uint32 = n => n & 0xFFFFFFFF;

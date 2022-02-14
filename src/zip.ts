@@ -1,6 +1,5 @@
-import { UINT32, UINT16, SIZE } from './data-type';
 import { Flag, parseFlag, DateToDay, DateToTime, DayToDate, TimeToDate, COMP_TYPE } from './util';
-import StreamBuffer from './stream-buf';
+import { StreamBuffer, UINT32, UINT16, SIZE } from '@arkiv/buffer';
 
 export class LocalFileHeader {
 
@@ -23,23 +22,23 @@ export class LocalFileHeader {
 
 	constructor(stream?: StreamBuffer) {
 		if ( stream ) {
-			this.signature = stream.ReadUint32();
+			this.signature = stream.readUint32();
 			if ( this.signature !== this.SIGNATURE ) {
 				throw Error('Can not read LocalFileHeader');
 			}
-			this.version = stream.ReadUint16();
-			this.flags = parseFlag(stream.ReadUint16());
-			this.compression = stream.ReadUint16();
-			this.modTime = stream.ReadUint16();
-			this.modDate = stream.ReadUint16();
-			this.crc32 = stream.ReadUint32();
-			this.compressedSize = stream.ReadUint32();
-			this.uncompressedSize = stream.ReadUint32();
-			this.filenameLen = stream.ReadUint16();
-			this.extraFieldLen = stream.ReadUint16();
-			this.filename = stream.ReadString(this.filenameLen);
-			this.extraField = stream.ReadBuffer(this.extraFieldLen);
-			this.data = stream.ReadBuffer(this.compressedSize);
+			this.version = stream.readUint16();
+			this.flags = parseFlag(stream.readUint16());
+			this.compression = stream.readUint16();
+			this.modTime = stream.readUint16();
+			this.modDate = stream.readUint16();
+			this.crc32 = stream.readUint32();
+			this.compressedSize = stream.readUint32();
+			this.uncompressedSize = stream.readUint32();
+			this.filenameLen = stream.readUint16();
+			this.extraFieldLen = stream.readUint16();
+			this.filename = stream.readString(this.filenameLen);
+			this.extraField = stream.readBuffer(this.extraFieldLen);
+			this.data = stream.readBuffer(this.compressedSize);
 		} else {
 			const date = new Date();
 			this.signature = this.SIGNATURE;
@@ -104,29 +103,29 @@ export class CentralDirectory {
 
 	constructor(stream?: StreamBuffer) {
 		if ( stream ) {
-			this.signature = stream.ReadUint32();
+			this.signature = stream.readUint32();
 			if ( this.signature !== this.SIGNATURE ) {
 				throw Error('Can not read Central Directory');
 			}
-			this.version = stream.ReadUint16();
-			this.extVer = stream.ReadUint16();
-			this.flags = parseFlag(stream.ReadUint16());
-			this.compression = stream.ReadUint16();
-			this.modTime = stream.ReadUint16();
-			this.modDate = stream.ReadUint16();
-			this.crc32 = stream.ReadUint32();
-			this.compressedSize = stream.ReadUint32();
-			this.uncompressedSize = stream.ReadUint32();
-			this.filenameLen = stream.ReadUint16();
-			this.extraFieldLen = stream.ReadUint16();
-			this.commentLen = stream.ReadUint16();
-			this.diskNumStart = stream.ReadUint16();
-			this.inAttr = stream.ReadUint16();
-			this.exAttr = stream.ReadUint32();
-			this.headerOffset = stream.ReadUint32();
-			this.filename = stream.ReadString(this.filenameLen);
-			this.extraField = stream.ReadBuffer(this.extraFieldLen);
-			this.comment = stream.ReadString(this.commentLen);
+			this.version = stream.readUint16();
+			this.extVer = stream.readUint16();
+			this.flags = parseFlag(stream.readUint16());
+			this.compression = stream.readUint16();
+			this.modTime = stream.readUint16();
+			this.modDate = stream.readUint16();
+			this.crc32 = stream.readUint32();
+			this.compressedSize = stream.readUint32();
+			this.uncompressedSize = stream.readUint32();
+			this.filenameLen = stream.readUint16();
+			this.extraFieldLen = stream.readUint16();
+			this.commentLen = stream.readUint16();
+			this.diskNumStart = stream.readUint16();
+			this.inAttr = stream.readUint16();
+			this.exAttr = stream.readUint32();
+			this.headerOffset = stream.readUint32();
+			this.filename = stream.readString(this.filenameLen);
+			this.extraField = stream.readBuffer(this.extraFieldLen);
+			this.comment = stream.readString(this.commentLen);
 		} else {
 			const date = new Date();
 			this.signature = this.SIGNATURE;
@@ -185,29 +184,29 @@ export class EndOfCentralDirectory {
 	public comment: string;         // Comment
 
 	static isEOCD(stream: StreamBuffer) {
-		const signature = stream.ReadUint32();
+		const signature = stream.readUint32();
 		let ret = false;
 		if ( signature === 0x06054B50 ) {
 			ret = true;
 		}
-		stream.Fd -= SIZE.UINT32;
+		stream.fp -= SIZE.UINT32;
 		return ret;
 	}
 
 	constructor(stream?: StreamBuffer) {
 		if ( stream ) {
-			this.signature = stream.ReadUint32();
+			this.signature = stream.readUint32();
 			if ( this.signature !== this.SIGNATURE ) {
 				throw Error('Can not read End of Central Directory');
 			}
-			this.diskNum = stream.ReadUint16();
-			this.diskStart = stream.ReadUint16();
-			this.recordNum = stream.ReadUint16();
-			this.totalNum = stream.ReadUint16();
-			this.recordSize = stream.ReadUint32();
-			this.recordStart = stream.ReadUint32();
-			this.commentLen = stream.ReadUint16();
-			this.comment = stream.ReadString(this.commentLen);
+			this.diskNum = stream.readUint16();
+			this.diskStart = stream.readUint16();
+			this.recordNum = stream.readUint16();
+			this.totalNum = stream.readUint16();
+			this.recordSize = stream.readUint32();
+			this.recordStart = stream.readUint32();
+			this.commentLen = stream.readUint16();
+			this.comment = stream.readString(this.commentLen);
 		} else {
 			this.signature = this.SIGNATURE;
 			this.diskNum = 0;

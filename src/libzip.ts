@@ -1,5 +1,4 @@
-import StreamBuffer from './stream-buf';
-import { UINT32, SIZE } from './data-type';
+import { StreamBuffer, UINT32, SIZE } from '@arkiv/buffer';
 import { FlagToInt16, COMP_TYPE } from './util';
 import ZIP20 from './std-zip20-enc';
 import { LocalFileHeader, CentralDirectory, EndOfCentralDirectory } from './zip';
@@ -156,10 +155,10 @@ export class ZipArchiveEntry {
 	}
 
 	public Init() {
-		const orgFd = this.stream.Fd;
-		this.stream.Fd = this.central.headerOffset;
+		const orgFp = this.stream.fp;
+		this.stream.fp = this.central.headerOffset;
 		this.header = new LocalFileHeader(this.stream);
-		this.stream.Fd = orgFd;
+		this.stream.fp = orgFp;
 	}
 
 	public Delete() {
@@ -220,16 +219,16 @@ export class ZipArchive {
 			if ( stream instanceof Buffer ) {
 				stream = new StreamBuffer(stream);
 			}
-			stream.Fd = stream.Length - SIZE.UINT32;
+			stream.fp = stream.length - SIZE.UINT32;
 			while ( !EndOfCentralDirectory.isEOCD(stream) ) {
-				if ( stream.Fd === 0 ) {
+				if ( stream.fp === 0 ) {
 					throw Error('Can not read Zip Archive');
 				}
-				stream.Fd -= SIZE.UINT8;
+				stream.fp -= SIZE.UINT8;
 			}
 			this.eofDir = new EndOfCentralDirectory(stream);
 
-			stream.Fd = this.eofDir.recordStart;
+			stream.fp = this.eofDir.recordStart;
 			for ( let i=0;i < this.eofDir.recordNum;i++ ) {
 				const entry = new ZipArchiveEntry(this, stream);
 
@@ -269,7 +268,7 @@ export class ZipArchive {
 
 	public ReloadInfo() {
 		const stream = new StreamBuffer();
-		stream.Fd = 0;
+		stream.fp = 0;
 		this.entries.forEach((entry: ZipArchiveEntry) => {
 
 			const unComData = entry.RawData;
@@ -295,24 +294,24 @@ export class ZipArchive {
 						break;
 				}
 			}
-			central.headerOffset = stream.Fd;
+			central.headerOffset = stream.fp;
 			central.crc32 = header.crc32 = crc32;
 			central.compressedSize = header.compressedSize = data.length;
 
-			stream.WriteUint32(header.signature);
-			stream.WriteUint16(header.version);
-			stream.WriteUint16(FlagToInt16(header.flags));
-			stream.WriteUint16(header.compression);
-			stream.WriteUint16(header.modTime);
-			stream.WriteUint16(header.modDate);
-			stream.WriteUint32(header.crc32);
-			stream.WriteUint32(header.compressedSize);
-			stream.WriteUint32(header.uncompressedSize);
-			stream.WriteUint16(header.filenameLen);
-			stream.WriteUint16(header.extraFieldLen);
-			stream.WriteString(header.filename);
-			stream.WriteBuffer(header.extraField);
-			stream.WriteBuffer(data);
+			stream.writeUint32(header.signature);
+			stream.writeUint16(header.version);
+			stream.writeUint16(FlagToInt16(header.flags));
+			stream.writeUint16(header.compression);
+			stream.writeUint16(header.modTime);
+			stream.writeUint16(header.modDate);
+			stream.writeUint32(header.crc32);
+			stream.writeUint32(header.compressedSize);
+			stream.writeUint32(header.uncompressedSize);
+			stream.writeUint16(header.filenameLen);
+			stream.writeUint16(header.extraFieldLen);
+			stream.writeString(header.filename);
+			stream.writeBuffer(header.extraField);
+			stream.writeBuffer(data);
 		});
 
 		this.eofDir.recordSize = 0;
@@ -321,46 +320,46 @@ export class ZipArchive {
 			let size = 0;
 
 			if ( idx === 0 ) {
-				this.eofDir.recordStart = stream.Fd;
+				this.eofDir.recordStart = stream.fp;
 			}
 
-			let startFd = stream.Fd;
-			stream.WriteUint32(central.signature);
-			stream.WriteUint16(central.version);
-			stream.WriteUint16(central.extVer);
-			stream.WriteUint16(FlagToInt16(central.flags));
-			stream.WriteUint16(central.compression);
-			stream.WriteUint16(central.modTime);
-			stream.WriteUint16(central.modDate);
-			stream.WriteUint32(central.crc32);
-			stream.WriteUint32(central.compressedSize);
-			stream.WriteUint32(central.uncompressedSize);
-			stream.WriteUint16(central.filenameLen);
-			stream.WriteUint16(central.extraFieldLen);
-			stream.WriteUint16(central.commentLen);
-			stream.WriteUint16(central.diskNumStart);
-			stream.WriteUint16(central.inAttr);
-			stream.WriteUint32(central.exAttr);
-			stream.WriteUint32(central.headerOffset);
-			stream.WriteString(central.filename);
-			stream.WriteBuffer(central.extraField);
-			stream.WriteString(central.comment);
-			size = stream.Fd - startFd;
+			let startFp = stream.fp;
+			stream.writeUint32(central.signature);
+			stream.writeUint16(central.version);
+			stream.writeUint16(central.extVer);
+			stream.writeUint16(FlagToInt16(central.flags));
+			stream.writeUint16(central.compression);
+			stream.writeUint16(central.modTime);
+			stream.writeUint16(central.modDate);
+			stream.writeUint32(central.crc32);
+			stream.writeUint32(central.compressedSize);
+			stream.writeUint32(central.uncompressedSize);
+			stream.writeUint16(central.filenameLen);
+			stream.writeUint16(central.extraFieldLen);
+			stream.writeUint16(central.commentLen);
+			stream.writeUint16(central.diskNumStart);
+			stream.writeUint16(central.inAttr);
+			stream.writeUint32(central.exAttr);
+			stream.writeUint32(central.headerOffset);
+			stream.writeString(central.filename);
+			stream.writeBuffer(central.extraField);
+			stream.writeString(central.comment);
+			size = stream.fp - startFp;
 			this.eofDir.recordSize += size;
 		});
 
 		this.eofDir.totalNum = this.eofDir.totalNum - this.eofDir.recordNum + this.entries.length;
 		this.eofDir.recordNum = this.entries.length;
 
-		stream.WriteUint32(this.eofDir.signature);
-		stream.WriteUint16(this.eofDir.diskNum);
-		stream.WriteUint16(this.eofDir.diskStart);
-		stream.WriteUint16(this.eofDir.recordNum);
-		stream.WriteUint16(this.eofDir.totalNum);
-		stream.WriteUint32(this.eofDir.recordSize);
-		stream.WriteUint32(this.eofDir.recordStart);
-		stream.WriteUint16(this.eofDir.commentLen);
-		stream.WriteString(this.eofDir.comment);
+		stream.writeUint32(this.eofDir.signature);
+		stream.writeUint16(this.eofDir.diskNum);
+		stream.writeUint16(this.eofDir.diskStart);
+		stream.writeUint16(this.eofDir.recordNum);
+		stream.writeUint16(this.eofDir.totalNum);
+		stream.writeUint32(this.eofDir.recordSize);
+		stream.writeUint32(this.eofDir.recordStart);
+		stream.writeUint16(this.eofDir.commentLen);
+		stream.writeString(this.eofDir.comment);
 
 		this.stream = stream;
 	}

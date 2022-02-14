@@ -1,4 +1,4 @@
-import { UINT32, UINT16, SIZE } from './data-type';
+import { UINT32, UINT16, SIZE } from '@arkiv/buffer';
 
 export enum COMP_TYPE {
 
