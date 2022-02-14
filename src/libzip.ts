@@ -504,7 +504,7 @@ export class ZipFile {
 			const dir = path.dirname(target);
 
 			if ( !fs.existsSync(dir) ) {
-				fs.mkdirSync(dir);
+				fs.mkdirSync(dir, { recursive: true, });
 			}
 
 			fs.writeFileSync(target, buf);
