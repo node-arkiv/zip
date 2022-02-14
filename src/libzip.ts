@@ -456,8 +456,8 @@ export class ZipFile {
 		archive.Password = passwd as string;
 
 		readDirectory(src, (p: string, is_dir: boolean) => {
-			const entry = archive.CreateEntry(p);
 			if ( !is_dir ) {
+				const entry = archive.CreateEntry(p);
 				const target = path.resolve(src, p);
 				const data = fs.readFileSync(target);
 				entry.Write(data);
@@ -477,8 +477,8 @@ export class ZipFile {
 		archive.Password = passwd as string;
 
 		readDirectory(src, (p: string, is_dir: boolean) => {
-			const entry = archive.CreateEntry(p);
 			if ( !is_dir ) {
+				const entry = archive.CreateEntry(p);
 				const target = path.resolve(src, p);
 				const data = fs.readFileSync(target);
 				entry.Write(data);
