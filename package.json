@@ -1,6 +1,6 @@
 {
 	"name": "@arkiv/zip",
-	"version": "1.1.9",
+	"version": "1.1.10",
 	"author": "raravel",
 	"license": "MIT",
 	"main": "dist/libzip.js",
